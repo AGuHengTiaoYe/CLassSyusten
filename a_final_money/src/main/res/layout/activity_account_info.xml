@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 用户名显示 -->
+    <TextView
+        android:id="@+id/tvUserName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="用户名："
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:paddingBottom="8dp" />
+
+    <!-- 当前余额 -->
+    <TextView
+        android:id="@+id/tvAccountBalance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="账户余额："
+        android:textSize="18sp"
+        android:paddingBottom="16dp" />
+
+    <!-- 理财产品列表 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="持有的理财产品："
+        android:textSize="16sp"
+        android:paddingBottom="8dp" />
+
+    <ListView
+        android:id="@+id/lvFinancialProducts"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="1dp" />
+
+    <!-- 操作按钮 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingTop="16dp">
+
+        <!-- 充值余额 -->
+        <Button
+            android:id="@+id/btnRecharge"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="充值余额" />
+
+        <!-- 转出余额 -->
+        <Button
+            android:id="@+id/btnTransferOut"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="转出余额"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+</LinearLayout>

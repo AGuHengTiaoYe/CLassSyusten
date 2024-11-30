@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <!-- 产品名称 -->
+    <TextView
+        android:id="@+id/tvProductName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="产品名称"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:paddingBottom="4dp" />
+
+    <!-- 投资金额 -->
+    <TextView
+        android:id="@+id/tvInvestmentAmount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="投资金额："
+        android:paddingBottom="4dp" />
+
+    <!-- 预计收益 -->
+    <TextView
+        android:id="@+id/tvExpectedProfit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="预计收益：" />
+</LinearLayout>
