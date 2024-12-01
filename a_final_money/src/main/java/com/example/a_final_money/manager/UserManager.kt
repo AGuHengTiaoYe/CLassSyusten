@@ -44,6 +44,10 @@ class UserManager private constructor(context: Context) {
     fun getUserId(): String? {
         return user?.userId
     }
+    fun getUserName():String{
+        return user!!.userName
+    }
+
 
     // 存款 - 使用 TransactionType
     @RequiresApi(Build.VERSION_CODES.O)
@@ -143,4 +147,6 @@ class UserManager private constructor(context: Context) {
     fun removeUserFinancialProduct(userId: String, productId: String): Boolean {
         return dbUserHelper!!.removeUserFinancialProduct(userId, productId)
     }
+
+
 }

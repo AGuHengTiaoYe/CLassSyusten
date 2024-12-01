@@ -3,8 +3,11 @@ package com.example.a_final_money.activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -27,9 +30,28 @@ class UserContentActivity : AppCompatActivity() {
         list = intent.getParcelableArrayListExtra("LoginUser") ?: arrayListOf()
         val user = list.firstOrNull() ?: return
 
-        val userName: TextView = findViewById(R.id.user_name)
-        userName.text = user.userName.ifEmpty {
-            user.userId
+        val currentUser = userManager.user!!
+        findViewById<TextView>(R.id.user_name).setOnClickListener {
+            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_name, null)
+            val editText = dialogView.findViewById<EditText>(R.id.edit_name)
+            editText.setText(currentUser.userName)
+
+            AlertDialog.Builder(this)
+                .setTitle("修改用户名")
+                .setView(dialogView)
+                .setPositiveButton("确定") { _, _ ->
+                    val newName = editText.text.toString().trim()
+                    if (newName.isNotEmpty()) {
+                        currentUser.userName = newName
+                        userManager.updateUserName(currentUser.userName)
+                        findViewById<TextView>(R.id.user_name).text = newName
+                        Toast.makeText(this, "用户名修改成功", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "用户名不能为空", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .setNegativeButton("取消", null)
+                .show()
         }
 
 

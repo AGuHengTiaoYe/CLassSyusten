@@ -6,10 +6,13 @@ import com.example.a_final_money.R
 
 import android.content.Intent
 import android.os.Build
+import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import com.example.a_final_money.DBHelper
 import com.example.a_final_money.FinancialProductInitializer
 import com.example.a_final_money.manager.UserManager
@@ -35,10 +38,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         userManager = UserManager.getInstance(this)
         initialProducts()
-        // 使用 by lazy 初始
-        // 化或使用 lateinit
         edtId = findViewById(R.id.edt_uid)
         edtPwd = findViewById(R.id.edt_upwd)
+
+
+
 
         // 登录按键
         val btnLogin: Button = findViewById(R.id.btn_login)

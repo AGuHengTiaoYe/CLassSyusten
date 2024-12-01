@@ -152,12 +152,12 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
 
     // 记录充值 转出的交易
     @RequiresApi(Build.VERSION_CODES.O)
-    fun addTransaction(userId: String, amount: Double, type: String): Long {
+    fun addTransaction(userId: String, amount: Double, type: TransactionType): Long {
         val db = writableDatabase
         val contentValues = ContentValues().apply {
             put(COLUMN_TRANSACTION_USER, userId)
             put(COLUMN_TRANSACTION_AMOUNT, amount)
-            put(COLUMN_TRANSACTION_TYPE, type)
+            put(COLUMN_TRANSACTION_TYPE, type.name)
             put(COLUMN_TRANSACTION_DATE, LocalDate.now().toString())
         }
         return db.insert(TABLE_TRANSACTIONS, null, contentValues)
@@ -363,7 +363,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
         val contentValues = ContentValues().apply {
             put(COLUMN_USER_ID, user.userId)
             put(COLUMN_USERPWD, user.userPwd)
-            put(COLUMN_USERNAME, user.userName)
+            put(COLUMN_USERNAME, user.userId)
             put(COLUMN_BALANCE, 0.0)
         }
         return db.insert(TABLE_USER, null, contentValues)

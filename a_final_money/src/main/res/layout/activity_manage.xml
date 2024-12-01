@@ -176,7 +176,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:ems="10"
-                android:hint="类型为收入或支出"
+                android:text="自定义"
                 android:inputType="textPersonName" />
         </LinearLayout>
 
