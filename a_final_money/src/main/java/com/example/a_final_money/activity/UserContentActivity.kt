@@ -28,13 +28,10 @@ class UserContentActivity : AppCompatActivity() {
         setContentView(R.layout.activity_user_content)
 
         userManager = UserManager.getInstance(this)
-        // 获取传递的用户信息
-        list = intent.getParcelableArrayListExtra("LoginUser") ?: arrayListOf()
-        val user = list.firstOrNull() ?: return
 
         val currentUser = userManager.user!!
         val userName = findViewById<TextView>(R.id.user_name)
-        userName.text = user.userName
+        userName.text = currentUser.userName
         userName.setOnClickListener {
             val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_name, null)
             val editText = dialogView.findViewById<EditText>(R.id.edit_name)
