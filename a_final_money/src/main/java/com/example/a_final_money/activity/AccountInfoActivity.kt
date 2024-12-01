@@ -37,6 +37,7 @@ class AccountInfoActivity : AppCompatActivity() {
         userManager = UserManager.getInstance(this)
         user = userManager.user!!
 
+
         // 绑定视图
         tvUserName = findViewById(R.id.tvUserName)
         tvAccountBalance = findViewById(R.id.tvAccountBalance)
@@ -50,16 +51,17 @@ class AccountInfoActivity : AppCompatActivity() {
         // 设置充值按钮点击事件
         btnRecharge.setOnClickListener {
             val rechargeAmount = 500.0 // 模拟充值 500
-            user.accountBalance += rechargeAmount
-            Toast.makeText(this, "充值成功：+${rechargeAmount}", Toast.LENGTH_SHORT).show()
-            updateUI()
+
+            if(userManager.deposit(rechargeAmount)) {
+                Toast.makeText(this, "充值成功：+${rechargeAmount}", Toast.LENGTH_SHORT).show()
+                updateUI()
+            }
         }
 
         // 设置转出按钮点击事件
         btnTransferOut.setOnClickListener {
             val transferAmount = 1000.0 // 模拟转出 1000
-            if (user.accountBalance >= transferAmount) {
-                user.accountBalance -= transferAmount
+            if ( userManager.withdraw(transferAmount)) {
                 Toast.makeText(this, "转出成功：-${transferAmount}", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "余额不足，无法转出", Toast.LENGTH_SHORT).show()

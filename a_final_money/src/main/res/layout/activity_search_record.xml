@@ -10,6 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -238,8 +239,7 @@
         <ListView
             android:id="@+id/searchlistview"
             android:layout_width="match_parent"
-            android:layout_height="500dp"
-            android:layout_weight="0"
+            android:layout_height="match_parent"
             android:layout_marginHorizontal="20dp"/>
 
     </LinearLayout>

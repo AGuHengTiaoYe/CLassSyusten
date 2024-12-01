@@ -5,6 +5,8 @@ import androidx.annotation.RequiresApi
 import com.example.a_final_money.model.FinancialProduct
 import com.example.a_final_money.model.User
 import com.example.a_final_money.DBHelper
+import com.example.a_final_money.Transaction
+import com.example.a_final_money.TransactionType
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.logging.Logger
@@ -49,7 +51,8 @@ class InvestmentManager(private val dbHelper: DBHelper) {
                 user.userId,
                 product.productId,
                 product.investmentAmount,
-                "投资支出"
+                TransactionType.PRODUCT_BUY,
+                "购买了${product.investmentAmount}￥${product.productName}"
             )
 
             if (transactionResult == -1L) {
@@ -60,6 +63,7 @@ class InvestmentManager(private val dbHelper: DBHelper) {
             // Update user state
             user.accountBalance = updatedBalance
             user.ownedFinancialProducts.add(product)
+            dbHelper.addOrUpdateUserFinancialProduct(user.userId,product)
 
             InvestmentResult.SUCCESS
         } ?: InvestmentResult.TRANSACTION_FAILED
@@ -102,7 +106,8 @@ class InvestmentManager(private val dbHelper: DBHelper) {
                 user.userId,
                 product.productId,
                 totalAmount,
-                "投资收入"
+                TransactionType.PRODUCT_BUY,
+                "卖出了${product.investmentAmount}￥${product.productName}"
             )
 
             if (transactionResult == -1L) {
@@ -113,6 +118,7 @@ class InvestmentManager(private val dbHelper: DBHelper) {
             // Update user state
             user.accountBalance = updatedBalance
             user.ownedFinancialProducts.remove(product)
+            dbHelper.removeUserFinancialProduct(user.userId,product.productId)
 
             Pair(InvestmentResult.SUCCESS, profit)
         } ?: Pair(InvestmentResult.TRANSACTION_FAILED, 0.0)

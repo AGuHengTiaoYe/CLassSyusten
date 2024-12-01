@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.example.a_final_money.model.FinancialProduct
 import com.example.a_final_money.model.ProductType
@@ -17,7 +18,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
 
     companion object {
         private const val DB_NAME = "FinancialApp.db"
-        private const val DATABASE_VERSION = 5
+        private const val DATABASE_VERSION = 12  // 升级版本号
         private const val TABLE_USER = "userinfo"
         private const val TABLE_TRANSACTIONS = "transactions"
         private const val TABLE_FINANCIAL_PRODUCTS = "financial_products"
@@ -35,6 +36,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
         private const val COLUMN_TRANSACTION_TYPE = "transaction_type"
         private const val COLUMN_TRANSACTION_DATE = "transaction_date"
         private const val COLUMN_TRANSACTION_PRODUCT_ID = "product_id"
+        private const val COLUMN_TRANSACTION_REMARK = "transaction_remark"  // 新增备注列
 
         // Financial Product table columns
         private const val COLUMN_PRODUCT_ID = "product_id"
@@ -56,6 +58,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
         )
     """
 
+    // 修改后的交易表创建语句
     private val CREATE_TRANSACTIONS_TABLE = """
         CREATE TABLE IF NOT EXISTS $TABLE_TRANSACTIONS(
             $COLUMN_TRANSACTION_ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,6 +67,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
             $COLUMN_TRANSACTION_TYPE TEXT NOT NULL,
             $COLUMN_TRANSACTION_DATE TEXT NOT NULL,
             $COLUMN_TRANSACTION_PRODUCT_ID TEXT,
+            $COLUMN_TRANSACTION_REMARK TEXT,
             FOREIGN KEY($COLUMN_TRANSACTION_USER) REFERENCES $TABLE_USER($COLUMN_USER_ID)
         )
     """
@@ -88,15 +92,156 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
         db.execSQL(CREATE_FINANCIAL_PRODUCTS_TABLE)
     }
 
+
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        if (oldVersion < 5) {
-            // Comprehensive upgrade path
+        if (oldVersion < 12) {
+            // 删除现有的表
             db.execSQL("DROP TABLE IF EXISTS $TABLE_USER")
             db.execSQL("DROP TABLE IF EXISTS $TABLE_TRANSACTIONS")
             db.execSQL("DROP TABLE IF EXISTS $TABLE_FINANCIAL_PRODUCTS")
-            onCreate(db)
+
+            // 重新创建表
+            db.execSQL(CREATE_USER_TABLE)
+            db.execSQL(CREATE_TRANSACTIONS_TABLE)
+            db.execSQL(CREATE_FINANCIAL_PRODUCTS_TABLE)
         }
     }
+
+
+    // 更新的方法，使用 TransactionType 枚举
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addTransaction(
+        userId: String,
+        amount: Double,
+        type: TransactionType,
+        productId: String? = null,
+        remark: String = ""
+    ): Long {
+        val db = writableDatabase
+        val contentValues = ContentValues().apply {
+            put(COLUMN_TRANSACTION_USER, userId)
+            put(COLUMN_TRANSACTION_AMOUNT, amount)
+            put(COLUMN_TRANSACTION_TYPE, type.name)  // 使用枚举的 name
+            put(COLUMN_TRANSACTION_DATE, LocalDate.now().toString())
+            productId?.let { put(COLUMN_TRANSACTION_PRODUCT_ID, it) }
+            put(COLUMN_TRANSACTION_REMARK, remark)
+        }
+        return db.insert(TABLE_TRANSACTIONS, null, contentValues)
+    }
+    // 用户自己增加开销记录 或者 购买理财产品
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addTransaction(
+        userId: String,
+        productId: String? = null,
+        amount: Double,
+        type: TransactionType,
+        remark: String = ""
+    ): Long {
+        val db = writableDatabase
+        val contentValues = ContentValues().apply {
+            put(COLUMN_TRANSACTION_USER, userId)
+            put(COLUMN_TRANSACTION_AMOUNT, amount)
+            put(COLUMN_TRANSACTION_TYPE, type.name)
+            put(COLUMN_TRANSACTION_DATE, LocalDate.now().toString())
+            productId?.let { put(COLUMN_TRANSACTION_PRODUCT_ID, it) }
+            put(COLUMN_TRANSACTION_REMARK, remark)
+        }
+        return db.insert(TABLE_TRANSACTIONS, null, contentValues)
+    }
+
+
+    // 记录充值 转出的交易
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addTransaction(userId: String, amount: Double, type: String): Long {
+        val db = writableDatabase
+        val contentValues = ContentValues().apply {
+            put(COLUMN_TRANSACTION_USER, userId)
+            put(COLUMN_TRANSACTION_AMOUNT, amount)
+            put(COLUMN_TRANSACTION_TYPE, type)
+            put(COLUMN_TRANSACTION_DATE, LocalDate.now().toString())
+        }
+        return db.insert(TABLE_TRANSACTIONS, null, contentValues)
+    }
+    //购买理财产品
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addTransaction(
+        userId: String,
+        productId: String? = null,
+        amount: Double,
+        type: String
+    ): Long {
+        val db = writableDatabase
+        val contentValues = ContentValues().apply {
+            put(COLUMN_TRANSACTION_USER, userId)
+            put(COLUMN_TRANSACTION_AMOUNT, amount)
+            put(COLUMN_TRANSACTION_TYPE, type)
+            put(COLUMN_TRANSACTION_DATE, LocalDate.now().toString())
+            // Nullable column for product ID
+            productId?.let { put(COLUMN_TRANSACTION_PRODUCT_ID, it) }
+        }
+        return db.insert(TABLE_TRANSACTIONS, null, contentValues)
+    }
+    // 更新用户交易记录的方法，使其兼容 TransactionType
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getUserTransactions(
+        userId: String,
+        startDate: LocalDate? = null,
+        endDate: LocalDate? = null
+    ): List<Transaction> {
+        val db = readableDatabase
+        val transactions = mutableListOf<Transaction>()
+
+        // 构建查询条件
+        val whereClause = buildString {
+            append("$COLUMN_TRANSACTION_USER = ?")
+            startDate?.let { append(" AND $COLUMN_TRANSACTION_DATE >= ?") }
+            endDate?.let { append(" AND $COLUMN_TRANSACTION_DATE <= ?") }
+        }
+
+        // 构建查询参数
+        val selectionArgs = mutableListOf<String>().apply {
+            add(userId)
+            startDate?.let { add(it.toString()) }
+            endDate?.let { add(it.toString()) }
+        }
+
+        // 执行查询
+        val cursor = db.query(
+            TABLE_TRANSACTIONS,
+            null,
+            whereClause,
+            selectionArgs.toTypedArray(),
+            null,
+            null,
+            "$COLUMN_TRANSACTION_DATE DESC"
+        )
+
+        cursor.use {
+            if (it.count == 0) {
+                // 如果没有数据，返回空列表
+                return emptyList()
+            }
+
+            // 处理查询结果
+            while (it.moveToNext()) {
+                transactions.add(
+                    Transaction(
+                        id = it.getLong(it.getColumnIndexOrThrow(COLUMN_TRANSACTION_ID)),
+                        userId = it.getString(it.getColumnIndexOrThrow(COLUMN_TRANSACTION_USER)),
+                        amount = it.getDouble(it.getColumnIndexOrThrow(COLUMN_TRANSACTION_AMOUNT)),
+                        type = TransactionType.valueOf(it.getString(it.getColumnIndexOrThrow(COLUMN_TRANSACTION_TYPE))),
+                        date = LocalDate.parse(it.getString(it.getColumnIndexOrThrow(COLUMN_TRANSACTION_DATE))),
+                        productId = it.getString(it.getColumnIndexOrThrow(COLUMN_TRANSACTION_PRODUCT_ID)),
+                        remark = it.getString(it.getColumnIndexOrThrow(COLUMN_TRANSACTION_REMARK))
+                    )
+                )
+            }
+        }
+
+        return transactions
+    }
+
+
 
     // Enhanced transaction methods with more robust error handling
     fun <T> executeInTransaction(operation: () -> T): T? {
@@ -130,11 +275,12 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
         return db.insert(TABLE_FINANCIAL_PRODUCTS, null, contentValues) != -1L
     }
 
-    // Retrieve user's financial products
     @RequiresApi(Build.VERSION_CODES.O)
-    fun getUserFinancialProducts(userId: String): List<FinancialProduct> {
+    fun getUserFinancialProducts(userId: String): MutableList<FinancialProduct> {
         val db = readableDatabase
         val products = mutableListOf<FinancialProduct>()
+
+        // Query the database for the user's financial products
         val cursor = db.query(
             TABLE_FINANCIAL_PRODUCTS,
             null,
@@ -146,22 +292,33 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
         )
 
         cursor.use {
-            while (it.moveToNext()) {
-                products.add(
-                    FinancialProduct(
-                        productId = it.getString(it.getColumnIndexOrThrow(COLUMN_PRODUCT_ID)),
-                        productName = it.getString(it.getColumnIndexOrThrow(COLUMN_PRODUCT_NAME)),
-                        annualRate = it.getDouble(it.getColumnIndexOrThrow(COLUMN_ANNUAL_RATE)),
-                        investmentAmount = it.getDouble(it.getColumnIndexOrThrow(COLUMN_INVESTMENT_AMOUNT)),
-                        investmentDate = LocalDate.parse(it.getString(it.getColumnIndexOrThrow(COLUMN_INVESTMENT_DATE))),
-                        duration = it.getInt(it.getColumnIndexOrThrow(COLUMN_PRODUCT_DURATION)),
-                        productType = ProductType.valueOf(it.getString(it.getColumnIndexOrThrow(COLUMN_PRODUCT_TYPE)))
-                    )
-                )
+            if (it != null && it.count > 0) {
+                // Loop through the cursor and add each product to the list
+                while (it.moveToNext()) {
+                    try {
+                        products.add(
+                            FinancialProduct(
+                                productId = it.getString(it.getColumnIndexOrThrow(COLUMN_PRODUCT_ID)),
+                                productName = it.getString(it.getColumnIndexOrThrow(COLUMN_PRODUCT_NAME)),
+                                annualRate = it.getDouble(it.getColumnIndexOrThrow(COLUMN_ANNUAL_RATE)),
+                                investmentAmount = it.getDouble(it.getColumnIndexOrThrow(COLUMN_INVESTMENT_AMOUNT)),
+                                investmentDate = LocalDate.parse(it.getString(it.getColumnIndexOrThrow(COLUMN_INVESTMENT_DATE))),
+                                duration = it.getInt(it.getColumnIndexOrThrow(COLUMN_PRODUCT_DURATION)),
+                                productType = ProductType.valueOf(it.getString(it.getColumnIndexOrThrow(COLUMN_PRODUCT_TYPE)))
+                            )
+                        )
+                    } catch (e: Exception) {
+                        // Log the error and continue, so that the crash does not occur
+                        Log.e("DBError", "Error parsing financial product: ${e.message}")
+                    }
+                }
             }
         }
+
+        // Return the list, it will be empty if no products were found
         return products
     }
+
 
     // Remove financial product
     fun removeFinancialProduct(productId: String): Boolean {
@@ -182,37 +339,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
             arrayOf(userId)
         )
     }
-    // 记录交易
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun addTransaction(userId: String, amount: Double, type: String): Long {
-        val db = writableDatabase
-        val contentValues = ContentValues().apply {
-            put(COLUMN_TRANSACTION_USER, userId)
-            put(COLUMN_TRANSACTION_AMOUNT, amount)
-            put(COLUMN_TRANSACTION_TYPE, type)
-            put(COLUMN_TRANSACTION_DATE, LocalDate.now().toString())
-        }
-        return db.insert(TABLE_TRANSACTIONS, null, contentValues)
-    }
-    // Enhanced method to add transaction with optional product ID
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun addTransaction(
-        userId: String,
-        productId: String? = null,
-        amount: Double,
-        type: String
-    ): Long {
-        val db = writableDatabase
-        val contentValues = ContentValues().apply {
-            put(COLUMN_TRANSACTION_USER, userId)
-            put(COLUMN_TRANSACTION_AMOUNT, amount)
-            put(COLUMN_TRANSACTION_TYPE, type)
-            put(COLUMN_TRANSACTION_DATE, LocalDate.now().toString())
-            // Nullable column for product ID
-            productId?.let { put(COLUMN_TRANSACTION_PRODUCT_ID, it) }
-        }
-        return db.insert(TABLE_TRANSACTIONS, null, contentValues)
-    }
+
 
 
     // 开始事务
@@ -259,7 +386,8 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
                     userId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_USER_ID)),
                     userPwd = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_USERPWD)),
                     userName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_USERNAME)),
-                    accountBalance = cursor.getDouble(cursor.getColumnIndexOrThrow(COLUMN_BALANCE))
+                    accountBalance = cursor.getDouble(cursor.getColumnIndexOrThrow(COLUMN_BALANCE)),
+
                 )
             } else {
                 null
@@ -379,7 +507,48 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
         return products
     }
 
+    // Method to remove a specific financial product for a user
+    fun removeUserFinancialProduct(userId: String, productId: String): Boolean {
+        val db = writableDatabase
+        return db.delete(
+            TABLE_FINANCIAL_PRODUCTS,
+            "$COLUMN_USER_ID = ? AND $COLUMN_PRODUCT_ID = ?",
+            arrayOf(userId, productId)
+        ) > 0
+    }
 
+    // Method to add or update a financial product for a user
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addOrUpdateUserFinancialProduct(
+        userId: String,
+        product: FinancialProduct,
+        overwriteExisting: Boolean = false
+    ): Boolean {
+        val db = writableDatabase
+        val contentValues = ContentValues().apply {
+            put(COLUMN_PRODUCT_ID, product.productId)
+            put(COLUMN_USER_ID, userId)
+            put(COLUMN_PRODUCT_NAME, product.productName)
+            put(COLUMN_ANNUAL_RATE, product.annualRate)
+            put(COLUMN_INVESTMENT_AMOUNT, product.investmentAmount)
+            put(COLUMN_INVESTMENT_DATE, product.investmentDate.toString())
+            put(COLUMN_PRODUCT_DURATION, product.duration)
+            put(COLUMN_PRODUCT_TYPE, product.productType.name)
+        }
+
+        return if (overwriteExisting) {
+            // Replace existing product if it exists
+            db.replace(TABLE_FINANCIAL_PRODUCTS, null, contentValues) != -1L
+        } else {
+            // Insert only if product doesn't exist for this user
+            db.insertWithOnConflict(
+                TABLE_FINANCIAL_PRODUCTS,
+                null,
+                contentValues,
+                SQLiteDatabase.CONFLICT_IGNORE
+            ) != -1L
+        }
+    }
 
 
 
@@ -482,3 +651,35 @@ class FinancialProductInitializer(private val dbHelper: DBHelper) {
         dbHelper.seedFinancialProducts()
     }
 }
+
+
+// Enum class with custom string representation for each type
+enum class TransactionType {
+    DEPOSIT,      // Recharge
+    WITHDRAW,     // Transfer out
+    PRODUCT_BUY,  // Buy financial product
+    PRODUCT_SELL, // Redeem financial product
+    CUSTOM;       // Custom user-defined type
+
+    override fun toString(): String {
+        return when (this) {
+            DEPOSIT -> "充值"
+            WITHDRAW -> "转出"
+            PRODUCT_BUY -> "购买"
+            PRODUCT_SELL -> "卖出"
+            CUSTOM -> "自定义"
+        }
+    }
+}
+
+
+// 更新 Transaction 数据类，使用 TransactionType
+data class Transaction(
+    val id: Long,
+    val userId: String,
+    val amount: Double,
+    val type: TransactionType,  // 使用枚举类型
+    val date: LocalDate,
+    val productId: String? = null,
+    val remark: String? = null
+)

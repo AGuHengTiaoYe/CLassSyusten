@@ -4,8 +4,12 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.example.a_final_money.DBHelper
+import com.example.a_final_money.Transaction
+import com.example.a_final_money.TransactionType
+import com.example.a_final_money.model.FinancialProduct
 import com.example.a_final_money.model.User
 import java.lang.ref.WeakReference
+import java.time.LocalDate
 import java.util.logging.Logger
 
 class UserManager private constructor(context: Context) {
@@ -29,9 +33,11 @@ class UserManager private constructor(context: Context) {
         return dbUserHelper?.registerUser(User(id, psd)) ?: -1
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun login(id: String, psd: String): User? {
         return dbUserHelper?.userLogin(id, psd)?.also {
             user = it
+            user!!.ownedFinancialProducts = dbUserHelper!!.getUserFinancialProducts(user!!.userId)
         }
     }
 
@@ -39,31 +45,37 @@ class UserManager private constructor(context: Context) {
         return user?.userId
     }
 
-    // 存款
+    // 存款 - 使用 TransactionType
     @RequiresApi(Build.VERSION_CODES.O)
     fun deposit(amount: Double): Boolean {
         val currentUser = user ?: return false
         val newBalance = currentUser.accountBalance + amount
         try {
-            dbUserHelper?.beginTransaction() // 开始事务
+            dbUserHelper?.beginTransaction()
             val updated = dbUserHelper?.updateUserBalance(currentUser.userId, newBalance)
             if (updated != 1) throw Exception("Failed to update user balance")
 
-            // 记录交易
-            val transactionId = dbUserHelper?.addTransaction(currentUser.userId, amount, "收入")
+            // 记录交易 - 使用 DEPOSIT 类型
+            val transactionId = dbUserHelper?.addTransaction(
+                currentUser.userId,
+                 amount,
+                type = TransactionType.DEPOSIT
+            )
             if (transactionId == -1L) throw Exception("Failed to record transaction")
 
-            dbUserHelper?.setTransactionSuccessful() // 设置事务成功
+            dbUserHelper?.setTransactionSuccessful()
             currentUser.accountBalance = newBalance
             return true
         } catch (e: Exception) {
-            dbUserHelper?.endTransaction() // 结束事务
+            dbUserHelper?.endTransaction()
             Logger.getLogger("UserManager").severe("Deposit failed: ${e.message}")
             return false
+        }finally {
+            dbUserHelper?.endTransaction()
         }
     }
 
-    // 取款
+    // 取款 - 使用 TransactionType
     @RequiresApi(Build.VERSION_CODES.O)
     fun withdraw(amount: Double): Boolean {
         val currentUser = user ?: return false
@@ -72,24 +84,29 @@ class UserManager private constructor(context: Context) {
         }
         val newBalance = currentUser.accountBalance - amount
         try {
-            dbUserHelper?.beginTransaction() // 开始事务
+            dbUserHelper?.beginTransaction()
             val updated = dbUserHelper?.updateUserBalance(currentUser.userId, newBalance)
             if (updated != 1) throw Exception("Failed to update user balance")
 
-            // 记录交易
-            val transactionId = dbUserHelper?.addTransaction(currentUser.userId, -amount, "支出")
+            // 记录交易 - 使用 WITHDRAW 类型
+            val transactionId = dbUserHelper?.addTransaction(
+                currentUser.userId,
+                -amount,
+                type = TransactionType.WITHDRAW
+            )
             if (transactionId == -1L) throw Exception("Failed to record transaction")
 
-            dbUserHelper?.setTransactionSuccessful() // 设置事务成功
+            dbUserHelper?.setTransactionSuccessful()
             currentUser.accountBalance = newBalance
             return true
         } catch (e: Exception) {
-            dbUserHelper?.endTransaction() // 结束事务
+            dbUserHelper?.endTransaction()
             Logger.getLogger("UserManager").severe("Withdraw failed: ${e.message}")
             return false
+        }finally {
+            dbUserHelper?.endTransaction()
         }
     }
-
     // 修改用户名
     fun updateUserName(newUserName: String): Boolean {
         val currentUser = user ?: return false
@@ -99,5 +116,31 @@ class UserManager private constructor(context: Context) {
             return true
         }
         return false
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getUserProducts(): List<FinancialProduct> {
+        return dbUserHelper!!.getUserFinancialProducts(user!!.userId)
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getUserTransactions(userId: String,
+                           startDate: LocalDate? = null,
+                           endDate: LocalDate? = null):List<Transaction> {
+        return dbUserHelper!!.getUserTransactions(userId,startDate,endDate)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun addOrUpdateUserFinancialProduct(
+        userId: String,
+        product: FinancialProduct,
+        overwriteExisting: Boolean = false
+    ): Boolean{
+        return dbUserHelper!!.addOrUpdateUserFinancialProduct(userId, product)
+    }
+
+    fun removeUserFinancialProduct(userId: String, productId: String): Boolean {
+        return dbUserHelper!!.removeUserFinancialProduct(userId, productId)
     }
 }

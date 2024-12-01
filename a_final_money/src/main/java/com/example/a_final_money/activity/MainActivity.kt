@@ -5,9 +5,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.a_final_money.R
 
 import android.content.Intent
+import android.os.Build
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import com.example.a_final_money.DBHelper
 import com.example.a_final_money.FinancialProductInitializer
 import com.example.a_final_money.manager.UserManager
@@ -18,12 +20,23 @@ class MainActivity : AppCompatActivity() {
     private lateinit var edtPwd: EditText
     private lateinit var userManager: UserManager
 
+
+    private val needInitial = false
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun initialProducts(){
+        if(needInitial){
+            FinancialProductInitializer(DBHelper(this)).initializeProducts()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         userManager = UserManager.getInstance(this)
-
-        // 使用 by lazy 初始化或使用 lateinit
+        initialProducts()
+        // 使用 by lazy 初始
+        // 化或使用 lateinit
         edtId = findViewById(R.id.edt_uid)
         edtPwd = findViewById(R.id.edt_upwd)
 

@@ -11,7 +11,7 @@ data class User(
     val userPwd: String,
     var userName: String = "",
     var accountBalance: Double = 0.0, // Double更简单
-    val ownedFinancialProducts: MutableList<FinancialProduct> = mutableListOf() // 持有的理财产品
+    var ownedFinancialProducts: MutableList<FinancialProduct> = mutableListOf() // 持有的理财产品
 ) : Parcelable {
 
     // 伴生对象中定义 CREATOR
