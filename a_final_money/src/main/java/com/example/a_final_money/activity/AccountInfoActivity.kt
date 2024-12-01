@@ -2,11 +2,14 @@ package com.example.a_final_money.activity
 
 import android.os.Build
 import android.os.Bundle
+import android.text.InputType
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.a_final_money.R
 import com.example.a_final_money.adapter.FinancialProductAdapter
@@ -50,23 +53,52 @@ class AccountInfoActivity : AppCompatActivity() {
 
         // 设置充值按钮点击事件
         btnRecharge.setOnClickListener {
-            val rechargeAmount = 500.0 // 模拟充值 500
+            val builder = AlertDialog.Builder(this)
+            val input = EditText(this)
+            input.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
 
-            if(userManager.deposit(rechargeAmount)) {
-                Toast.makeText(this, "充值成功：+${rechargeAmount}", Toast.LENGTH_SHORT).show()
-                updateUI()
-            }
+            builder.setTitle("请输入充值金额")
+                .setView(input)
+                .setPositiveButton("确定") { _, _ ->
+                    val amountStr = input.text.toString()
+                    if (amountStr.isNotEmpty()) {
+                        val rechargeAmount = amountStr.toDouble()
+                        if (userManager.deposit(rechargeAmount)) {
+                            Toast.makeText(this, "充值成功：+${rechargeAmount}", Toast.LENGTH_SHORT).show()
+                            updateUI()
+                        }
+                    }
+                }
+                .setNegativeButton("取消") { dialog, _ ->
+                    dialog.cancel()
+                }
+            builder.show()
         }
 
-        // 设置转出按钮点击事件
+// 设置转出按钮点击事件
         btnTransferOut.setOnClickListener {
-            val transferAmount = 1000.0 // 模拟转出 1000
-            if ( userManager.withdraw(transferAmount)) {
-                Toast.makeText(this, "转出成功：-${transferAmount}", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "余额不足，无法转出", Toast.LENGTH_SHORT).show()
-            }
-            updateUI()
+            val builder = AlertDialog.Builder(this)
+            val input = EditText(this)
+            input.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+
+            builder.setTitle("请输入转出金额")
+                .setView(input)
+                .setPositiveButton("确定") { _, _ ->
+                    val amountStr = input.text.toString()
+                    if (amountStr.isNotEmpty()) {
+                        val transferAmount = amountStr.toDouble()
+                        if (userManager.withdraw(transferAmount)) {
+                            Toast.makeText(this, "转出成功：-${transferAmount}", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "余额不足，无法转出", Toast.LENGTH_SHORT).show()
+                        }
+                        updateUI()
+                    }
+                }
+                .setNegativeButton("取消") { dialog, _ ->
+                    dialog.cancel()
+                }
+            builder.show()
         }
     }
 

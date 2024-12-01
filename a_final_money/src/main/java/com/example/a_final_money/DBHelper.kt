@@ -149,39 +149,6 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DATA
         return db.insert(TABLE_TRANSACTIONS, null, contentValues)
     }
 
-
-    // 记录充值 转出的交易
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun addTransaction(userId: String, amount: Double, type: TransactionType): Long {
-        val db = writableDatabase
-        val contentValues = ContentValues().apply {
-            put(COLUMN_TRANSACTION_USER, userId)
-            put(COLUMN_TRANSACTION_AMOUNT, amount)
-            put(COLUMN_TRANSACTION_TYPE, type.name)
-            put(COLUMN_TRANSACTION_DATE, LocalDate.now().toString())
-        }
-        return db.insert(TABLE_TRANSACTIONS, null, contentValues)
-    }
-    //购买理财产品
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun addTransaction(
-        userId: String,
-        productId: String? = null,
-        amount: Double,
-        type: String
-    ): Long {
-        val db = writableDatabase
-        val contentValues = ContentValues().apply {
-            put(COLUMN_TRANSACTION_USER, userId)
-            put(COLUMN_TRANSACTION_AMOUNT, amount)
-            put(COLUMN_TRANSACTION_TYPE, type)
-            put(COLUMN_TRANSACTION_DATE, LocalDate.now().toString())
-            // Nullable column for product ID
-            productId?.let { put(COLUMN_TRANSACTION_PRODUCT_ID, it) }
-        }
-        return db.insert(TABLE_TRANSACTIONS, null, contentValues)
-    }
-    // 更新用户交易记录的方法，使其兼容 TransactionType
     @RequiresApi(Build.VERSION_CODES.O)
     fun getUserTransactions(
         userId: String,

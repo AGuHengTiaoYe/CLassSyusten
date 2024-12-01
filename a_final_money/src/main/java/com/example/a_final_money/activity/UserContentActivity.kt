@@ -1,5 +1,6 @@
 package com.example.a_final_money.activity
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -20,6 +21,7 @@ class UserContentActivity : AppCompatActivity() {
     private lateinit var list: ArrayList<User>
     private lateinit var userManager: UserManager
 
+    @SuppressLint("CutPasteId")
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +33,9 @@ class UserContentActivity : AppCompatActivity() {
         val user = list.firstOrNull() ?: return
 
         val currentUser = userManager.user!!
-        findViewById<TextView>(R.id.user_name).setOnClickListener {
+        val userName = findViewById<TextView>(R.id.user_name)
+        userName.text = user.userName
+        userName.setOnClickListener {
             val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_name, null)
             val editText = dialogView.findViewById<EditText>(R.id.edit_name)
             editText.setText(currentUser.userName)
